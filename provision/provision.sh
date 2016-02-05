@@ -298,13 +298,14 @@ nginx_setup() {
 
   # Copy nginx configuration from local
   cp "/srv/config/nginx-config/nginx.conf" "/etc/nginx/nginx.conf"
-  # cp "/srv/config/nginx-config/nginx-wp-common.conf" "/etc/nginx/nginx-wp-common.conf"
+  cp "/srv/config/nginx-config/nginx-wp-common.conf" "/etc/nginx/nginx-wp-common.conf"
   if [[ ! -d "/etc/nginx/custom-sites" ]]; then
     mkdir "/etc/nginx/custom-sites/"
   fi
   rsync -rvzh --delete "/srv/config/nginx-config/sites/" "/etc/nginx/custom-sites/"
 
   echo " * Copied /srv/config/nginx-config/nginx.conf           to /etc/nginx/nginx.conf"
+  echo " * Copied /srv/config/nginx-config/nginx-wp-common.conf           to /etc/nginx/nginx-wp-common.conf"
   echo " * Rsync'd /srv/config/nginx-config/sites/              to /etc/nginx/custom-sites"
 }
 
@@ -427,6 +428,51 @@ phpmyadmin_setup() {
   cp "/srv/config/phpmyadmin-config/config.inc.php" "/srv/www/default/database-admin/"
 }
 
+wp_cli() {
+  # WP-CLI Install
+  if [[ ! -d "/srv/www/wp-cli" ]]; then
+    echo -e "\nDownloading wp-cli, see http://wp-cli.org"
+    git clone "https://github.com/wp-cli/wp-cli.git" "/srv/www/wp-cli"
+    cd /srv/www/wp-cli
+    composer install
+  else
+    echo -e "\nUpdating wp-cli..."
+    cd /srv/www/wp-cli
+    git pull --rebase origin master
+    composer update
+  fi
+  # Link `wp` to the `/usr/local/bin` directory
+  ln -sf "/srv/www/wp-cli/bin/wp" "/usr/local/bin/wp"
+}
+
+wordpress_default() {
+  # Install and configure the latest stable version of WordPress
+  if [[ ! -d "/srv/www/wordpress-default" ]]; then
+    echo "Downloading WordPress Stable, see http://wordpress.org/"
+    cd /srv/www/
+    curl -L -O "https://wordpress.org/latest.tar.gz"
+    noroot tar -xvf latest.tar.gz
+    mv wordpress wordpress-default
+    rm latest.tar.gz
+    cd /srv/www/wordpress-default
+    echo "Configuring WordPress Stable..."
+    noroot wp core config --dbname=wordpress_default --dbuser=wp --dbpass=wp --quiet --extra-php <<PHP
+// Match any requests made via xip.io.
+if ( isset( \$_SERVER['HTTP_HOST'] ) && preg_match('/^(wordpress.devm01.)\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}(.xip.io)\z/', \$_SERVER['HTTP_HOST'] ) ) {
+define( 'WP_HOME', 'http://' . \$_SERVER['HTTP_HOST'] );
+define( 'WP_SITEURL', 'http://' . \$_SERVER['HTTP_HOST'] );
+}
+define( 'WP_DEBUG', true );
+PHP
+    echo "Installing WordPress Stable..."
+    noroot wp core install --url=wordpress.devm01.dev --quiet --title="Local WordPress Dev" --admin_name=admin --admin_email="admin@devm01.dev" --admin_password="password"
+  else
+    echo "Updating WordPress Stable..."
+    cd /srv/www/wordpress-default
+    noroot wp core upgrade
+  fi
+}
+
 # SCRIPT
 
 network_check
@@ -451,6 +497,8 @@ echo " "
 echo "Installing/updating debugging tools"
 opcached_status
 phpmyadmin_setup
+wp_cli
+wordpress_default
 
 #set +xv
 # And it's done
