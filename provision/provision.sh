@@ -24,6 +24,24 @@ apt_package_install_list=()
 # virtual machine. We'll then loop through each of these and check individual
 # status before adding them to the apt_package_install_list array.
 apt_package_check_list=(
+    # PHP5
+    #
+    # Our base packages for php5. As long as php5-fpm and php5-cli are
+    # installed, there is no need to install the general php5 package, which
+    # can sometimes install apache as a requirement.
+    php5-fpm
+    php5-cli
+
+    # Common and dev packages for php
+    php5-common
+    php5-dev
+
+    # Extra PHP modules that we find useful
+    php5-mcrypt
+    php5-curl
+    php-pear
+    php5-gd
+
     # nginx is installed as the default web server
     nginx
 
@@ -190,7 +208,7 @@ tools_install() {
   # XDebug 2.2.3 is provided with the Ubuntu install by default. The PECL
   # installation allows us to use a later version. Not specifying a version
   # will load the latest stable.
-  # pecl install xdebug
+  pecl install xdebug
 
   # # ack-grep
   # #
@@ -286,6 +304,25 @@ nginx_setup() {
   echo " * Rsync'd /srv/config/nginx-config/sites/              to /etc/nginx/custom-sites"
 }
 
+phpfpm_setup() {
+  # Copy php-fpm configuration from local
+  cp "/srv/config/php5-fpm-config/php5-fpm.conf" "/etc/php5/fpm/php5-fpm.conf"
+  cp "/srv/config/php5-fpm-config/www.conf" "/etc/php5/fpm/pool.d/www.conf"
+  cp "/srv/config/php5-fpm-config/php-custom.ini" "/etc/php5/fpm/conf.d/php-custom.ini"
+  cp "/srv/config/php5-fpm-config/opcache.ini" "/etc/php5/fpm/conf.d/opcache.ini"
+  cp "/srv/config/php5-fpm-config/xdebug.ini" "/etc/php5/mods-available/xdebug.ini"
+
+  # Find the path to Xdebug and prepend it to xdebug.ini
+  XDEBUG_PATH=$( find /usr -name 'xdebug.so' | head -1 )
+  sed -i "1izend_extension=\"$XDEBUG_PATH\"" "/etc/php5/mods-available/xdebug.ini"
+
+  echo " * Copied /srv/config/php5-fpm-config/php5-fpm.conf     to /etc/php5/fpm/php5-fpm.conf"
+  echo " * Copied /srv/config/php5-fpm-config/www.conf          to /etc/php5/fpm/pool.d/www.conf"
+  echo " * Copied /srv/config/php5-fpm-config/php-custom.ini    to /etc/php5/fpm/conf.d/php-custom.ini"
+  echo " * Copied /srv/config/php5-fpm-config/opcache.ini       to /etc/php5/fpm/conf.d/opcache.ini"
+  echo " * Copied /srv/config/php5-fpm-config/xdebug.ini        to /etc/php5/mods-available/xdebug.ini"
+}
+
 services_restart() {
   # RESTART SERVICES
   #
@@ -299,11 +336,25 @@ services_restart() {
   # Enable PHP mcrypt module by default
   # php5enmod mcrypt
 
-  # service php5-fpm restart
+  service php5-fpm restart
 
   # Add the vagrant user to the www-data group so that it has better access
   # to PHP and Nginx related files.
   usermod -a -G www-data vagrant
+}
+
+opcached_status(){
+  # Checkout Opcache Status to provide a dashboard for viewing statistics
+  # about PHP's built in opcache.
+  if [[ ! -d "/srv/www/default/opcache-status" ]]; then
+    echo -e "\nDownloading Opcache Status, see https://github.com/rlerdorf/opcache-status/"
+    cd /srv/www/default
+    git clone "https://github.com/rlerdorf/opcache-status.git" opcache-status
+  else
+    echo -e "\nUpdating Opcache Status"
+    cd /srv/www/default/opcache-status
+    git pull --rebase origin master
+  fi
 }
 
 # SCRIPT
@@ -323,6 +374,10 @@ nginx_setup
 services_restart
 
 network_check
+
+echo " "
+echo "Installing/updating debugging tools"
+opcached_status
 
 #set +xv
 # And it's done
