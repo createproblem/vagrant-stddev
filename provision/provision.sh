@@ -153,8 +153,8 @@ package_install() {
   # Use debconf-set-selections to specify the default password for the root MySQL
   # account. This runs on every provision, even if MySQL has been installed. If
   # MySQL is already installed, it will not affect anything.
-  # echo mysql-server mysql-server/root_password password "root" | debconf-set-selections
-  # echo mysql-server mysql-server/root_password_again password "root" | debconf-set-selections
+  echo mysql-server mysql-server/root_password password "root" | debconf-set-selections
+  echo mysql-server mysql-server/root_password_again password "root" | debconf-set-selections
 
   # Postfix
   #
@@ -357,16 +357,16 @@ mysql_setup() {
     #
     # Create the databases (unique to system) that will be imported with
     # the mysqldump files located in database/backups/
-    if [[ -f "/srv/database/init-custom.sql" ]]; then
-      mysql -u "root" -p"root" < "/srv/database/init-custom.sql"
+    if [[ -f "/srv/db-mysql/init-custom.sql" ]]; then
+      mysql -u "root" -p"root" < "/srv/db-mysql/init-custom.sql"
       echo -e "\nInitial custom MySQL scripting..."
     else
-      echo -e "\nNo custom MySQL scripting found in database/init-custom.sql, skipping..."
+      echo -e "\nNo custom MySQL scripting found in db-mysql/init-custom.sql, skipping..."
     fi
 
     # Setup MySQL by importing an init file that creates necessary
     # users and databases that our vagrant setup relies on.
-    mysql -u "root" -p"root" < "/srv/database/init.sql"
+    mysql -u "root" -p"root" < "/srv/db-mysql/init.sql"
     echo "Initial MySQL prep..."
 
     # Process each mysqldump SQL file in database/backups to import
@@ -412,6 +412,21 @@ opcached_status(){
   fi
 }
 
+phpmyadmin_setup() {
+  # Download phpMyAdmin
+  if [[ ! -d /srv/www/default/database-admin ]]; then
+    echo "Downloading phpMyAdmin..."
+    cd /srv/www/default
+    wget -q -O phpmyadmin.tar.gz "https://files.phpmyadmin.net/phpMyAdmin/4.4.10/phpMyAdmin-4.4.10-all-languages.tar.gz"
+    tar -xf phpmyadmin.tar.gz
+    mv phpMyAdmin-4.4.10-all-languages database-admin
+    rm phpmyadmin.tar.gz
+  else
+    echo "PHPMyAdmin already installed."
+  fi
+  cp "/srv/config/phpmyadmin-config/config.inc.php" "/srv/www/default/database-admin/"
+}
+
 # SCRIPT
 
 network_check
@@ -426,13 +441,16 @@ echo "Main packages check and install."
 package_install
 tools_install
 nginx_setup
+phpfpm_setup
 services_restart
+mysql_setup
 
 network_check
 
 echo " "
 echo "Installing/updating debugging tools"
 opcached_status
+phpmyadmin_setup
 
 #set +xv
 # And it's done
