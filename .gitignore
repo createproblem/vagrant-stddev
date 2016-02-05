@@ -31,7 +31,8 @@
 /config/bash_prompt
 
 # No need to share our mysql data with each other
-/database/data/*
+/db-mysql/data/*
+!/db-mysql/data/.gitkeep
 
 # Log files should be ignored.
 /log/*.log
@@ -44,12 +45,10 @@
 *.sql.gz
 
 # BUT....
+!/db-mysql/init.sql
 
 # We do have some default nginx configs that should be included
 !/config/nginx-config/sites/default.conf
-
-# And we do have a default SQL file that should be included
-!/database/init.sql
 
 # And we provide our default host names in a dat file.
 !/www/vvv-hosts

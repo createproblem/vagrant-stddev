@@ -13,15 +13,16 @@ if ( file_exists( 'dashboard-custom.php' ) ) {
 <!DOCTYPE html>
 <html>
 <head>
-	<title>Varying Vagrant Vagrants Dashboard</title>
+	<title>Vagrant Standard Development Environment</title>
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 </head>
 <body>
 <ul class="nav">
 	<li class="active"><a href="#">Home</a></li>
-	<li><a href="https://github.com/varying-vagrant-vagrants/vvv/">Repository</a></li>
+	<li><a href="https://github.com/createproblem/vagrant-stddev">Repository</a></li>
 	<li><a href="opcache-status/opcache.php">Opcache Status</a></li>
 	<li><a href="phpinfo/">PHP Info</a></li>
+	<li><a href="database-admin/">phpMyAdmin</a></li>
 </ul>
 </body>
 </html>

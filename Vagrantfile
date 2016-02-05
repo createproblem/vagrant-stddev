@@ -66,6 +66,14 @@ Vagrant.configure(2) do |config|
   # virtual machine is destroyed with `vagrant destroy`, your files will remain in your local
   # environment.
 
+  # /srv/database/
+  #
+  # If a database directory exists in the same directory as your Vagrantfile,
+  # a mapped directory inside the VM will be created that contains these files.
+  # This directory is used to maintain default database scripts as well as backed
+  # up mysql dumps (SQL files) that are to be imported automatically on vagrant up
+  config.vm.synced_folder "db-mysql/", "/srv/db-mysql"
+
   # /srv/config/
   #
   # If a server-conf directory exists in the same directory as your Vagrantfile,
