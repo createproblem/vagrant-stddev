@@ -110,13 +110,14 @@ profile_setup() {
     mkdir "/home/vagrant/bin"
   fi
 
-  # rsync -rvzh --delete "/srv/config/homebin/" "/home/vagrant/bin/"
+  rsync -rvzh --delete "/srv/config/homebin/" "/home/vagrant/bin/"
+  chmod +x /home/vagrant/bin/*
 
   echo " * Copied /srv/config/bash_profile                      to /home/vagrant/.bash_profile"
   # echo " * Copied /srv/config/bash_aliases                      to /home/vagrant/.bash_aliases"
   # echo " * Copied /srv/config/vimrc                             to /home/vagrant/.vimrc"
   # echo " * Copied /srv/config/subversion-servers                to /home/vagrant/.subversion/servers"
-  # echo " * rsync'd /srv/config/homebin                          to /home/vagrant/bin"
+  echo " * rsync'd /srv/config/homebin                          to /home/vagrant/bin"
 
   # If a bash_prompt file exists in the VVV config/ directory, copy to the VM.
   if [[ -f "/srv/config/bash_prompt" ]]; then
@@ -241,19 +242,6 @@ tools_install() {
     echo "Your personal GitHub token is set for Composer."
   fi
 
-  # Update both Composer and any global packages. Updates to Composer are direct from
-  # the master branch on its GitHub repository.
-  if [[ -n "$(composer --version --no-ansi | grep 'Composer version')" ]]; then
-    echo "Updating Composer..."
-    COMPOSER_HOME=/usr/local/src/composer composer self-update
-    # COMPOSER_HOME=/usr/local/src/composer composer -q global require --no-update phpunit/phpunit:4.8.*
-    # COMPOSER_HOME=/usr/local/src/composer composer -q global require --no-update phpunit/php-invoker:1.1.*
-    # COMPOSER_HOME=/usr/local/src/composer composer -q global require --no-update mockery/mockery:0.9.*
-    # COMPOSER_HOME=/usr/local/src/composer composer -q global require --no-update d11wtq/boris:v1.0.8
-    COMPOSER_HOME=/usr/local/src/composer composer -q global config bin-dir /usr/local/bin
-    COMPOSER_HOME=/usr/local/src/composer composer global update
-  fi
-
   # Grunt
   #
   # Install or Update Grunt based on current state.  Updates are direct
@@ -372,7 +360,7 @@ mysql_setup() {
 
     # Process each mysqldump SQL file in database/backups to import
     # an initial data set for MySQL.
-    # "/srv/database/import-sql.sh"
+    "/home/vagrant/bin/db_import"
   else
     echo -e "\nMySQL is not installed. No databases imported."
   fi
