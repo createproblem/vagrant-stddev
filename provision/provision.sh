@@ -366,7 +366,6 @@ mysql_setup() {
   fi
 }
 
-
 services_restart() {
   # RESTART SERVICES
   #
